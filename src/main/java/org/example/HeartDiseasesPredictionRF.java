@@ -70,7 +70,7 @@ public class HeartDiseasesPredictionRF {
         JavaRDD<LabeledPoint> training = split[0];
         JavaRDD<LabeledPoint> test = split[1];
 
-        ///////////////////// Ranodom forest 91% accuracy /////////////////////
+        ///////////////////// Ranodom forest 91% accuracy //////////////////////
         Integer numClasses = 26;
         HashMap<Integer, Integer> categoricalFeaturesInfo = new HashMap<Integer, Integer>();
         Integer numTrees = 5; // Use more in practice.
