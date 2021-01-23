@@ -26,7 +26,9 @@ import scala.Tuple2;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -120,6 +122,14 @@ public class HeartDiseasesPredictionRF {
         //Print the prediction accuracy
         System.out.println("Accuracy of the classification: "+accuracy);
 
+        URL url = new URL ("http://localhost:8050/api/heartPredictions");
+        HttpURLConnection con = (HttpURLConnection)url.openConnection();
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-Type", "application/json; utf-8");
+        con.setRequestProperty("Accept", "application/json");
+        con.setDoOutput(true);
+
+
         Socket mySocket = new Socket("localhost", 9087);
         DataInputStream dis=new DataInputStream(mySocket.getInputStream());
         while (true) {
@@ -134,6 +144,34 @@ public class HeartDiseasesPredictionRF {
             Vector v = new DenseVector(features);
             Tuple2 t = new Tuple2<>(tokens[13],model.predict(v));
             System.out.println(t);
+            String jsonInputString = "{ \"a1\":\""+ tokens[0] +"\"," +
+                                     " \"a2\":\""+ tokens[1] +"\"," +
+                                        "\"a3\":\""+ tokens[2] +"\"," +
+                                        "\"a4\":\""+ tokens[3] +"\"," +
+                                        "\"a5\":\""+ tokens[4] +"\"," +
+                                        "\"a6\":\""+ tokens[5] +"\"," +
+                                        "\"a7\":\""+ tokens[6] +"\"," +
+                                        "\"a8\":\""+ tokens[7] +"\"," +
+                                        "\"a9\":\""+ tokens[8] +"\"," +
+                                        "\"a10\":\""+ tokens[9] +"\"," +
+                                        "\"a11\":\""+ tokens[10] +"\"," +
+                                        "\"a12\":\""+ tokens[11] +"\"," +
+                                        "\"a13\":\""+ tokens[12] +"\"," +
+                                        "\"a14\":\""+ model.predict(v) +"\"}";
+            System.out.println(jsonInputString);
+            try(OutputStream os = con.getOutputStream()) {
+                byte[] input2 = jsonInputString.getBytes("utf-8");
+                os.write(input2, 0, input2.length);
+            }
+            try(BufferedReader br = new BufferedReader(
+                    new InputStreamReader(con.getInputStream(), "utf-8"))) {
+                StringBuilder response = new StringBuilder();
+                String responseLine = null;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+                System.out.println(response.toString());
+            }
         }
 
     }
