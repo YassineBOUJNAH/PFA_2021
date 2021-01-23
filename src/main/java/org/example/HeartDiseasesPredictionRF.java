@@ -1,7 +1,10 @@
 package org.example;
 
+import lombok.val;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.mllib.linalg.DenseVector;
@@ -11,13 +14,27 @@ import org.apache.spark.mllib.tree.RandomForest;
 import org.apache.spark.mllib.tree.model.RandomForestModel;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.Seconds;
+import org.apache.spark.streaming.StreamingContext;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.dstream.ReceiverInputDStream;
 import scala.Tuple2;
 
+import java.io.*;
+import java.lang.reflect.Array;
+import java.net.Socket;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.apache.spark.api.java.StorageLevels.MEMORY_AND_DISK_SER_2;
+
 public class HeartDiseasesPredictionRF {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException, IOException {
         //Create an active Spark session
         SparkSession spark = UtilityForSparkSession.mySession();
 
@@ -102,7 +119,24 @@ public class HeartDiseasesPredictionRF {
 
         //Print the prediction accuracy
         System.out.println("Accuracy of the classification: "+accuracy);
-        //my_data.show(false);
-        spark.stop();
+
+        Socket mySocket = new Socket("localhost", 9087);
+        DataInputStream dis=new DataInputStream(mySocket.getInputStream());
+        while (true) {
+            String row = (String) dis.readUTF();
+            System.out.println("message= " + row);
+            String line = row.replaceAll("\\?", "999999.0");
+            String[] tokens = line.split(",");
+            double[] features = new double[13];
+            for (int i = 0; i < 13; i++) {
+                features[i] = Double.parseDouble(tokens[i]);
+            }
+            Vector v = new DenseVector(features);
+            Tuple2 t = new Tuple2<>(tokens[13],model.predict(v));
+            System.out.println(t);
+        }
+
     }
-}
+        //my_data.show(false);
+        //spark.stop();
+    }
